@@ -6,7 +6,7 @@
       ansible.builtin.set_fact:
         first_list:
           - {"stat": {"path": "/dev/disk/by-path/randostring-0", "lnk_source": "/dev/sdb"}}
-#          - {"stat": {"path": "/dev/disk/by-path/randostring-1", "lnk_source": "/dev/sdc"}}
+          - {"stat": {"path": "/dev/disk/by-path/randostring-1", "lnk_source": "/dev/sdc"}}
 
     # Loop through each item in first_list and create a new list called mod_list
     - name: Create simple list
@@ -17,19 +17,19 @@
     - name: Create simple list
       ansible.builtin.set_fact:
         second_list:
-          - {"vg_name": "bobby", "luns": [0]}
-#          - {"vg_name": "billy", "luns": [1]}
+          - {"vg_name": "bobby", "luns": [0, 1]}
+          - {"vg_name": "billy", "luns": [1]}
 
     - name: Debug
       ansible.builtin.debug:
         var: mod_list
 
     # List comprehension to filter items from mod_list
-    - name: Create simple list
+    - name: Create filtered and complex list
       ansible.builtin.set_fact:
         filtered_mod_list: >-
-          {{  mod_list | selectattr('lun_number', 'in', (item.luns | flatten | string))
-            | combine({ "vg_name": item.vg_name }) }}
+          {{ filtered_mod_list | default([]) + [ { "vg_name": item.vg_name, "disks": mod_list
+            | selectattr('lun_number', 'in', (item.luns | string)) | map(attribute='lnk_source') } ] }}
       loop: "{{ second_list }}"
 
     - name: Debug
