@@ -1,0 +1,37 @@
+- name: Test list comp
+  hosts: localhost
+
+  tasks:
+    - name: Create first list
+      ansible.builtin.set_fact:
+        first_list:
+          - {"stat": {"path": "/dev/disk/by-path/randostring-0", "lnk_source": "/dev/sdb"}}
+#          - {"stat": {"path": "/dev/disk/by-path/randostring-1", "lnk_source": "/dev/sdc"}}
+
+    # Loop through each item in first_list and create a new list called mod_list
+    - name: Create simple list
+      ansible.builtin.set_fact:
+        mod_list: "{{ mod_list | default([]) + [{'lun_number': item.stat.path.split('-')[-1], 'lnk_source': item.stat.lnk_source}] }}"
+      loop: "{{ first_list }}"
+
+    - name: Create simple list
+      ansible.builtin.set_fact:
+        second_list:
+          - {"vg_name": "bobby", "luns": [0]}
+#          - {"vg_name": "billy", "luns": [1]}
+
+    - name: Debug
+      ansible.builtin.debug:
+        var: mod_list
+
+    # List comprehension to filter items from mod_list
+    - name: Create simple list
+      ansible.builtin.set_fact:
+        filtered_mod_list: >-
+          {{  mod_list | selectattr('lun_number', 'in', (item.luns | flatten | string))
+            | combine({ "vg_name": item.vg_name }) }}
+      loop: "{{ second_list }}"
+
+    - name: Debug
+      ansible.builtin.debug:
+        var: filtered_mod_list
